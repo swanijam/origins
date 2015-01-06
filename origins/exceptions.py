@@ -10,6 +10,22 @@ class ValidationError(OriginsError):
     pass
 
 
+class ParseError(OriginsError):
+    pass
+
+
+class StatementError(OriginsError):
+    pass
+
+
+class ProcessError(OriginsError):
+    pass
+
+
+class QueryError(OriginsError):
+    pass
+
+
 class ResultError(OriginsError):
     pass
 

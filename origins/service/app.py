@@ -3,38 +3,59 @@ from flask import Flask, make_response
 from flask.ext import restful
 from flask_cors import CORS
 from origins import config
-from origins.graph.model import Model
-from . import (root, search, nodes, edges, resources, components,
-               collections, relationships, trends)
+from origins.models import Model
+from . import root, resources, entities, \
+    links, topologies, generator
 
 
 app = Flask(__name__)
 
-cors = CORS(app, headers=['Content-Type'],
+cors_methods = (
+    'PUT',
+    'POST',
+    'PATCH',
+    'DELETE',
+)
+
+cors_headers = (
+    'Content-Type',
+)
+
+cors_expose_headers = (
+    'Link',
+    'Link-Template',
+)
+
+cors = CORS(app,
+            methods=cors_methods,
+            headers=cors_headers,
+            expose_headers=cors_expose_headers,
             send_wildcard=False,
             supports_credentials=True)
 
 api = restful.Api(app)
 
 
-def json_node_encoder(o):
+def model_serializer(o):
     if isinstance(o, Model):
-        return o.to_dict()
-    raise ValueError
+        return o.serialize(unpack=True)
+
+    raise TypeError
 
 
 @api.representation('application/json')
 def json_representation(data, code, headers=None):
     if data is None:
         data = ''
-    elif not isinstance(data, str):
+    elif not isinstance(data, (str, bytes)):
         indent = 4 if config.options['debug'] else None
-        data = json.dumps(data, indent=indent, default=json_node_encoder)
+        data = json.dumps(data, indent=indent, default=model_serializer)
 
     response = make_response(data, code)
 
     if headers:
-        response.headers.update(headers)
+        for key, value in headers.items():
+            response.headers[key] = value
 
     return response
 
@@ -44,124 +65,89 @@ routes = [
      '/',
      'root'),
 
-    (search.SearchResource,
-     '/search/',
-     'search'),
-
-    (nodes.NodesResource,
-     '/nodes/', 'nodes'),
-
-    (nodes.NodeResource,
-     '/nodes/<uuid>/',
-     'node'),
-
-    (nodes.NodeRevisionsResource,
-     '/nodes/<uuid>/revisions/',
-     'node-revisions'),
-
-    (nodes.NodeEdgesResource,
-     '/nodes/<uuid>/edges/',
-     'node-edges'),
-
-    (edges.EdgesResource,
-     '/edges/',
-     'edges'),
-
-    (edges.EdgeResource,
-     '/edges/<uuid>/',
-     'edge'),
-
-    (resources.ResourcesResource,
+    (resources.ListResource,
      '/resources/',
      'resources'),
 
-    (resources.ResourceSyncResource,
-     '/resources/sync/',
-     'resource-sync'),
+    (generator.GeneratorResource,
+     '/generator/',
+     'generator'),
 
-    (resources.ResourceResource,
-     '/resources/<uuid>/',
+    (resources.ItemResource,
+     '/resources/<id>/',
      'resource'),
 
-    (resources.ResourceComponentsResource,
-     '/resources/<uuid>/components/',
-     'resource-components'),
+    (resources.EntitiesResource,
+     '/resources/<id>/entities/',
+     'resource-entities'),
 
-    (resources.ResourceRelationshipsResource,
-     '/resources/<uuid>/relationships/',
-     'resource-relationships'),
+    (resources.EntityRootsResource,
+     '/resources/<id>/entities/root/',
+     'resource-entity-roots'),
 
-    (components.ComponentsResource,
-     '/components/',
-     'components'),
+    (resources.LinksResource,
+     '/resources/<id>/links/',
+     'resource-links'),
 
-    (components.ComponentResource,
-     '/components/<uuid>/',
-     'component'),
+    (resources.FeedResource,
+     '/resources/<id>/feed/',
+     'resource-feed'),
 
-    (components.ComponentRevisionsResource,
-     '/components/<uuid>/revisions/',
-     'component-revisions'),
+    (resources.ImportResource,
+     '/resources/<id>/import/',
+     'resource-import'),
 
-    (components.ComponentRelationshipsResource,
-     '/components/<uuid>/relationships/',
-     'component-relationships'),
+    (topologies.ListResource,
+     '/topologies/',
+     'topologies'),
 
-    (relationships.RelationshipsResource,
-     '/relationships/',
-     'relationships'),
+    (topologies.ItemResource,
+     '/topologies/<id>/',
+     'topology'),
 
-    (relationships.RelationshipResource,
-     '/relationships/<uuid>/',
-     'relationship'),
+    (topologies.LinksResource,
+     '/topologies/<id>/links/',
+     'topology-links'),
 
-    (collections.CollectionsResource,
-     '/collections/',
-     'collections'),
+    (topologies.EntitiesResource,
+     '/topologies/<id>/entities/',
+     'topology-entities'),
 
-    (collections.CollectionResource,
-     '/collections/<uuid>/',
-     'collection'),
+    (topologies.FeedResource,
+     '/topologies/<id>/feed/',
+     'topology-feed'),
 
-    (collections.CollectionResourcesResource,
-     '/collections/<uuid>/resources/',
-     'collection-resources'),
+    (topologies.ImportResource,
+     '/topologies/<id>/import/',
+     'topology-import'),
 
-    (trends.Trends,
-     '/trends/',
-     'trends'),
+    (entities.ListResource,
+     '/entities/',
+     'entities'),
 
-    (trends.ConnectedComponents,
-     '/trends/connected-components/',
-     'trend-connected-components'),
+    (entities.ItemResource,
+     '/entities/<uuid>/',
+     'entity'),
 
-    (trends.UsedComponents,
-     '/trends/used-components/',
-     'trend-used-components'),
+    (entities.FeedResource,
+     '/entities/<uuid>/feed/',
+     'entity-feed'),
 
-    (trends.ConnectedResources,
-     '/trends/connected-resources/',
-     'trend-connected-resources'),
+    (entities.LinksResource,
+     '/entities/<uuid>/links/',
+     'entity-links'),
 
-    (trends.UsedResources,
-     '/trends/used-resources/',
-     'trend-used-resources'),
+    (entities.ChildrenResource,
+     '/entities/<uuid>/children/',
+     'entity-children'),
 
-    (trends.ComponentSources,
-     '/trends/component-sources/',
-     'trend-component-sources'),
+    (links.ListResource,
+     '/links/',
+     'links'),
 
-    (trends.ResourceTypes,
-     '/trends/resource-types/',
-     'trend-resource-types'),
-
-    (trends.ComponentTypes,
-     '/trends/component-types/',
-     'trend-component-types'),
-
-    (trends.RelationshipTypes,
-     '/trends/relationship-types/',
-     'trend-relationship-types'),
+    (links.ItemResource,
+     '/links/<uuid>/',
+     'link'),
 ]
 
 for resource, path, name in routes:

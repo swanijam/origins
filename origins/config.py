@@ -8,10 +8,15 @@ from copy import deepcopy
 
 # Default configuration options
 default_options = {
-    'debug': None,
+    'debug': False,
 
     'host': 'localhost',
     'port': 5000,
+
+    'generator': {
+        'host': 'localhost',
+        'port': 5001,
+    },
 
     'neo4j': {
         'host': 'localhost',
@@ -29,14 +34,19 @@ default_options = {
         'disable_existing_loggers': True,
         'handlers': {
             'console': {
-                'level': 'DEBUG',
+                'level': 'INFO',
                 'class': 'logging.StreamHandler',
-            }
+            },
         },
         'loggers': {
             'origins': {
                 'handlers': ['console'],
-                'level': 'DEBUG',
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'origins.log.processor': {
+                'handlers': ['console'],
+                'level': 'INFO',
                 'propagate': True,
             },
             'origins.events': {

@@ -1,14 +1,17 @@
 import json
 import logging
 
-IGNORED_ATTRS = {
-    'start',
-    'end',
-    'resource',
-}
-
 PACK_PREFIX = 'origins:'
 
+UNPACK_MAP = {
+    'prov:type': 'type',
+    'prov:label': 'label'
+}
+
+PACK_MAP = {
+    'type': 'prov:type',
+    'label': 'prov:label',
+}
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,9 @@ def pack(a):
                     b[_k] = _v
 
         # Everything else is prefixed
-        elif k not in IGNORED_ATTRS:
+        elif k in PACK_MAP:
+            b[PACK_MAP[k]] = v
+        elif k:
             b['{}{}'.format(PACK_PREFIX, k)] = v
 
     return b
@@ -59,11 +64,13 @@ def unpack(b):
     low = len(PACK_PREFIX)
 
     for k, v in b.items():
-        if k.startswith(PACK_PREFIX):
+        if k in UNPACK_MAP:
+            a[UNPACK_MAP[k]] = v
+        elif k.startswith(PACK_PREFIX):
             a[k[low:]] = v
         else:
-            # JSON decode nested maps
-            if isinstance(v, str) and v.startswith('{'):
+            # JSON decode nested maps and arrays
+            if isinstance(v, str) and (v.startswith('{') or v.startswith('[')):
                 try:
                     v = json.loads(v)
                 except ValueError:

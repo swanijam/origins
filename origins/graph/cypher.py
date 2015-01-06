@@ -1,3 +1,7 @@
+import re
+from string import Template as T
+
+
 def map(keys, parameter):
     "Produce a valid Cypher parametized map given keys and a parameter name."
     if not keys:
@@ -39,3 +43,26 @@ def labels(labels):
         labels = [labels]
 
     return ':' + ':'.join(['`{}`'.format(l) for l in labels])
+
+
+# Duplicate whitespace
+ns = re.compile(r'[\n\s]+')
+
+# Comments
+cm = re.compile(r'//.*$', re.M)
+
+
+def _(s):
+    return ns.sub(' ', cm.sub('', s).strip())
+
+
+def prepare(statement, model=None, start_model=None, end_model=None,
+            **mapping):
+    "Prepares a Cypher statement."
+    statement = T(statement)
+
+    mapping['model'] = labels(model)
+    mapping['start_model'] = labels(start_model)
+    mapping['end_model'] = labels(end_model)
+
+    return _(statement.safe_substitute(mapping))

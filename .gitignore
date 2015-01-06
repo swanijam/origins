@@ -7,3 +7,4 @@ dist
 htmlcov
 notebooks
 .ipynb_checkpoints
+config.json

@@ -3,6 +3,7 @@ import json
 import atexit
 import logging
 import requests
+from urllib.parse import urlparse
 from origins import config
 from origins.exceptions import ResultError
 
@@ -125,10 +126,18 @@ class Client(object):
 
             uri = DEFAULT_URI_TMPL.format(host=host, port=port, scheme=scheme)
 
+        self.host = urlparse(uri).netloc
         self.uri = uri
+
+        # Default auto-commit transaction
+        self.tx = self.transaction(autocommit=True)
 
     def transaction(self, batch_size=None, autocommit=False):
         return Transaction(self, batch_size, autocommit)
+
+    def send(self, *args, **kwargs):
+        tx = Transaction(self, autocommit=True)
+        return tx.send(*args, **kwargs)
 
     def purge(self, *args, **kwargs):
         "Deletes all nodes and relationships."
@@ -316,6 +325,10 @@ class Transaction(object):
 
         return resp
 
+    @property
+    def host(self):
+        return self.client.host
+
     def send(self, statements, parameters=None, defer=False):
         """Sends statements to an existing transaction or opens a new one.
 
@@ -371,4 +384,4 @@ class Transaction(object):
 client = Client(**config.options['neo4j'])
 
 # Default transaction with auto-commit enabled
-tx = client.transaction(autocommit=True)
+tx = client.tx
