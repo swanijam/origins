@@ -307,7 +307,7 @@ class Handler(dict):
             self.events.append({
                 'command': 'remove',
                 'model': Entity.__name__,
-                'instance': n,
+                'attrs': n,
             })
 
             self.remove_continuant('entity', remote)
@@ -331,7 +331,7 @@ class Handler(dict):
                 self.events.append({
                     'command': 'update',
                     'model': model.__name__,
-                    'instance': local.serialize(),
+                    'attrs': local.serialize(),
                     'previous': remote.serialize(),
                     'diff': diff,
                 })
@@ -343,7 +343,7 @@ class Handler(dict):
             self.events.append({
                 'command': 'add',
                 'model': model.__name__,
-                'instance': local.serialize(),
+                'attrs': local.serialize(),
             })
             self.add_continuant(concept, cid, local)
 
@@ -362,7 +362,7 @@ class Handler(dict):
                 self.events.append({
                     'command': 'update',
                     'model': model.__name__,
-                    'instance': local.serialize(),
+                    'attrs': local.serialize(),
                     'previous': remote.serialize(),
                     'diff': diff,
                 })
@@ -374,7 +374,7 @@ class Handler(dict):
             self.events.append({
                 'command': 'add',
                 'model': model.__name__,
-                'instance': local.serialize(),
+                'attrs': local.serialize(),
             })
             self._queue('add', concept, cid, local)
 
