@@ -13,7 +13,7 @@ default_options = {
     'host': 'localhost',
     'port': 5000,
 
-    'generator': {
+    'generator-service': {
         'host': 'localhost',
         'port': 5001,
     },

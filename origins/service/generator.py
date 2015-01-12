@@ -7,7 +7,7 @@ from flask.ext import restful
 
 
 def send_request(method, source=None, data=None, files=None):
-    loc = config.options['generator']
+    loc = config.options['generator-service']
     url = 'http://{}:{}'.format(loc['host'], loc['port'])
 
     if source:
