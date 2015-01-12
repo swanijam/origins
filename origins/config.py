@@ -18,6 +18,11 @@ default_options = {
         'port': 5001,
     },
 
+    'dispatch-service': {
+        'host': 'localhost',
+        'port': 5002,
+    },
+
     'neo4j': {
         'host': 'localhost',
         'port': 7474,

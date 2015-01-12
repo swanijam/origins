@@ -14,7 +14,7 @@ VALID_ENTITY_STATEMENT = '''
 
     MATCH (:Resource {`origins:uuid`: { resource }})-[:manages]->(n:Entity)
     WHERE NOT (n)<-[:`prov:entity`]-(:Invalidation)
-    RETURN n.`origins:uuid`
+    RETURN n
 
 '''  # noqa
 
@@ -121,6 +121,7 @@ class Handler(dict):
         self.statements = defaultdict(list)
         self.processed = {}
         self.cid_statements = {}
+        self.events = []
 
     def _index_get(self, concept, model, attr, value):
         """Finds an instance of `model` with the specified attribute value.
@@ -295,12 +296,19 @@ class Handler(dict):
             }
         })
 
-        unseen = set([r[0] for r in result]) - self.seen
+        for n in unseen:
+            if n['origins:uuid'] in self.seen:
+                continue
 
-        for uuid in unseen:
             remote = Entity({
-                'origins:uuid': uuid,
+                'origins:uuid': n['origins:uuid'],
             }, defaults=False)
+
+            self.events.append({
+                'command': 'remove',
+                'model': Entity.__name__,
+                'instance': n,
+            })
 
             self.remove_continuant('entity', remote)
 
@@ -320,11 +328,23 @@ class Handler(dict):
             # If a difference, process the update, otherwise queue a reference
             # to the remote.
             if diff:
-                self.update_continuant(cid, local, remote)
+                self.events.append({
+                    'command': 'update',
+                    'model': model.__name__,
+                    'instance': local.serialize(),
+                    'previous': remote.serialize(),
+                    'diff': diff,
+                })
+                self.update_continuant(concept, cid, local, remote)
             else:
                 self._queue('noop', concept, cid, remote)
         else:
             local = model(attrs)
+            self.events.append({
+                'command': 'add',
+                'model': model.__name__,
+                'instance': local.serialize(),
+            })
             self.add_continuant(concept, cid, local)
 
         return local
@@ -339,11 +359,23 @@ class Handler(dict):
             diff = local.diff(remote)
 
             if diff:
+                self.events.append({
+                    'command': 'update',
+                    'model': model.__name__,
+                    'instance': local.serialize(),
+                    'previous': remote.serialize(),
+                    'diff': diff,
+                })
                 self._queue('update', concept, cid, local)
             else:
                 self._queue('noop', concept, cid, remote)
         else:
             local = model(attrs)
+            self.events.append({
+                'command': 'add',
+                'model': model.__name__,
+                'instance': local.serialize(),
+            })
             self._queue('add', concept, cid, local)
 
         return local
@@ -504,7 +536,7 @@ class Handler(dict):
             if concept in self.statements:
                 statements.extend(self.statements[concept])
 
-        return statements
+        return statements, self.events
 
 
 def evaluate(resource, desc, invalidate=False, tx=neo4j.tx):

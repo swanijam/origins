@@ -1,10 +1,12 @@
 import json
 import codecs
 import traceback
+import requests
 from flask import request
 from flask.ext import restful
-from origins.exceptions import ValidationError
+from origins import config
 from origins import log, provenance, managers, packer, utils
+from origins.exceptions import ValidationError
 from origins.models import Resource, Entity
 from origins.graph import neo4j
 from .utils import header_links
@@ -344,8 +346,9 @@ class ImportResource(restful.Resource):
         fake = 'fake' in request.args
 
         try:
+
             with neo4j.client.transaction() as tx:
-                statements = provenance.evaluate(instance, data, tx=tx)
+                statements, events = provenance.evaluate(instance, data, tx=tx)
                 commands = log.process(statements, tx=tx)
 
                 for cmd in commands:
@@ -357,6 +360,27 @@ class ImportResource(restful.Resource):
 
                     counts[cmd.command].setdefault(cmd.model.name, 0)
                     counts[cmd.command][cmd.model.name] += 1
+
+                if events:
+                    # TODO: this is an assumption
+                    ns = config.options['dispatch-service']
+                    url = 'http://{}:{}'.format(ns['host'], ns['port'])
+
+                    payload = {
+                        'event': 'resource-merge',
+                        'timestamp': instance.time,
+                        'data': {
+                            'resource': instance.serialize(),
+                            'operations': events,
+                        }
+                    }
+
+                    # Only submit events if the commit was successful
+                    # TODO: authorization? trusted host?
+                    # TODO: put in a thread so it does not block the response
+                    requests.post(url, data=json.dumps(payload), headers={
+                        'content-type': 'application/json',
+                    })
 
                 # TODO: this is not very resource friendly since all of the
                 # transaction needs to be held by the server. However this is
@@ -376,7 +400,6 @@ class ImportResource(restful.Resource):
                         # expensive
                         entity_manager = managers.get(Entity)
                         entity_manager.build_search_index(tx=tx)
-
         except Exception:
             return {
                 'message': traceback.format_exc()
