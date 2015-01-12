@@ -7,7 +7,10 @@ from .commands import Command
 logger = logging.getLogger(__name__)
 
 
-IDENTIFIERS = {'origins:id', 'origins:uuid'}
+IDENTIFIERS = {
+    'origins:id',
+    'origins:uuid',
+}
 
 
 class Statement():
@@ -56,17 +59,17 @@ def add(stmt, tx):
     instance = stmt.instance
 
     # Assume the instance has been prepared ahead of time
-    if not instance:
-        try:
-            exists = manager.exists(tx=tx, **stmt.params)
-        except QueryError:
-            exists = False
-
-        if exists:
-            raise ValidationError('already exists')
-
-        instance = model(**stmt.params)
-        stmt.instance = instance
+#    if not instance:
+#        try:
+#            exists = manager.exists(tx=tx, **stmt.params)
+#        except QueryError:
+#            exists = False
+#
+#        if exists:
+#            raise ValidationError('already exists')
+#
+#        instance = model(**stmt.params)
+#        stmt.instance = instance
 
     return [
         Command('add', instance, host=tx.host),
@@ -83,34 +86,34 @@ def update(stmt, tx):
     manager = managers.get(model)
     instance = stmt.instance
 
-    if instance:
-        if not set(instance.attrs) - IDENTIFIERS:
-            logger.warn('%s only contains identifiers', instance)
-            return
-    else:
-        # Validate the instance exists
-        instance = manager.get(tx=tx, **stmt.params)
-
-        if not instance:
-            raise ValidationError('does not exist')
-
-        stmt.instance = instance
-        attrs = stmt.params.get('attrs', {})
-
-        # Only identifiers, do nothing
-        if not set(attrs) - IDENTIFIERS:
-            logger.warn('%s only contains identifiers', instance)
-            return
-
-        # Diff the attributes to save a write operation
-        diff = instance.diff(attrs)
-
-        if not diff:
-            logger.debug('%s did not change', instance)
-            return
-
-        # Derive from existing instance and determine diff them to see if
-        instance.attrs.update(attrs)
+#    if instance:
+#        if not set(instance.attrs) - IDENTIFIERS:
+#            logger.warn('%s only contains identifiers', instance)
+#            return
+#    else:
+#        # Validate the instance exists
+#        instance = manager.get(tx=tx, **stmt.params)
+#
+#        if not instance:
+#            raise ValidationError('does not exist')
+#
+#        stmt.instance = instance
+#        attrs = stmt.params.get('attrs', {})
+#
+#        # Only identifiers, do nothing
+#        if not set(attrs) - IDENTIFIERS:
+#            logger.warn('%s only contains identifiers', instance)
+#            return
+#
+#        # Diff the attributes to save a write operation
+#        diff = instance.diff(attrs)
+#
+#        if not diff:
+#            logger.debug('%s did not change', instance)
+#            return
+#
+#        # Derive from existing instance and determine diff them to see if
+#        instance.attrs.update(attrs)
 
     return [
         Command('update', instance, host=tx.host),
@@ -122,14 +125,14 @@ def remove(stmt, tx):
     manager = managers.get(model)
     instance = stmt.instance
 
-    if not instance:
-        instance = manager.get(tx=tx, **stmt.params)
-
-        if not instance:
-            raise ValidationError('does not exist')
-
-        stmt.instance = instance
-
+#    if not instance:
+#        instance = manager.get(tx=tx, **stmt.params)
+#
+#        if not instance:
+#            raise ValidationError('does not exist')
+#
+#        stmt.instance = instance
+#
     return [
         Command('remove', instance, host=tx.host)
     ]
