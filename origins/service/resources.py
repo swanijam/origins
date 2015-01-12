@@ -406,3 +406,18 @@ class ImportResource(restful.Resource):
             }, 422
 
         return counts, 200
+
+
+class SubscribersResource(restful.Resource):
+    def get(self, id):
+        instance = manager.get_by_id(id)
+
+        if not instance:
+            return {
+                'type': 'data',
+                'message': 'not found',
+            }, 404
+
+        users = manager.subscribers(instance.uuid)
+
+        return users, 200

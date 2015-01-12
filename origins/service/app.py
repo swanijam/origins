@@ -89,6 +89,10 @@ routes = [
      '/resources/<id>/links/',
      'resource-links'),
 
+    (resources.SubscribersResource,
+     '/resources/<id>/subscribers/',
+     'resource-subscribers'),
+
     (resources.FeedResource,
      '/resources/<id>/feed/',
      'resource-feed'),

@@ -120,6 +120,11 @@ class ResourceManager(Manager):
 
     '''  # noqa
 
+    subscribers_statement = '''
+        MATCH (:Resource {`origins:uuid`: { uuid }})<-[:subscribedTo]-(u:User)
+        RETURN u
+    '''
+
     def entity_types_query(self, uuid):
         statement = cypher.prepare(self.entity_types_statement,
                                    model=self.label)
@@ -210,6 +215,17 @@ class ResourceManager(Manager):
 
     def invalidation_events_query(self, uuid):
         statement = cypher.prepare(self.invalidation_events_statement,
+                                   model=self.label)
+
+        return {
+            'statement': statement,
+            'parameters': {
+                'uuid': uuid,
+            }
+        }
+
+    def subscribers_query(self, uuid):
+        statement = cypher.prepare(self.subscribers_statement,
                                    model=self.label)
 
         return {
@@ -397,6 +413,13 @@ class ResourceManager(Manager):
                 g = None
 
         return feed
+
+    def subscribers(self, uuid, tx=neo4j.tx):
+        query = self.subscribers_query(uuid)
+
+        result = tx.send(query)
+
+        return [r[0] for r in result]
 
 
 class ResourceManagedManager(Manager):
