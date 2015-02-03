@@ -230,9 +230,7 @@ class EntitiesResource(restful.Resource):
         items = []
 
         for e in _entities:
-            item = e.serialize(unpack=True)
-            item['resource'] = resource
-            items.append(item)
+            items.append(entities.prepare_instance(e, resource=resource))
 
         return items, 200, entities.list_headers()
 

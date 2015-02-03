@@ -117,12 +117,15 @@ def list_headers(page=None, limit=None, count=None):
     return header
 
 
-def prepare_instance(instance):
+def prepare_instance(instance, resource=None):
     attrs = instance.serialize(unpack=True)
-    resource = manager.resource(instance.uuid)
+
+    if resource is None:
+        resource = manager.resource(instance.uuid)
+        resource = resource.serialize(unpack=True)
 
     attrs['link_count'] = manager.link_count(instance.uuid)
-    attrs['resource'] = resource.serialize(unpack=True)
+    attrs['resource'] = resource
     attrs['path'] = [e.serialize(unpack=True)
                      for e in manager.path(instance.uuid)]
 
