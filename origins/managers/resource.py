@@ -48,6 +48,7 @@ class ResourceManager(Manager):
     entity_count_statement = '''
 
         MATCH (r$model {`origins:uuid`: { uuid }})-[:manages]->(e:Entity)
+        WHERE NOT (e)<-[:revisionOf]-()
         RETURN count(e)
 
     '''
@@ -84,8 +85,22 @@ class ResourceManager(Manager):
               (l)-[:`origins:end`]->(e)
         WHERE (s)<-[:`prov:entity`]-(:Invalidation)
             OR (e)<-[:`prov:entity`]-(:Invalidation)
-        WITH l
         RETURN count(DISTINCT l)
+
+    '''
+
+    broken_links_statement = '''
+
+        MATCH ($model {`origins:uuid`: { uuid }})-[:manages]->(e:Entity)
+        WHERE NOT (e)<-[:revisionOf]-()
+        WITH e
+        MATCH (e)<-[a:`origins:start`|`origins:end`]-(l:Link)
+        WITH DISTINCT l
+        MATCH (l)-[:`origins:start`]->(s),
+              (l)-[:`origins:end`]->(e)
+        WHERE (s)<-[:`prov:entity`]-(:Invalidation)
+            OR (e)<-[:`prov:entity`]-(:Invalidation)
+        RETURN DISTINCT l
 
     '''
 

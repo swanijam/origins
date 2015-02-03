@@ -194,6 +194,7 @@ class EntityManager(ResourceManagedManager):
         MATCH (e$model {`origins:uuid`: { uuid }})
         WITH e
         MATCH (e)<-[:edge*]-(n)
+        WHERE NOT (n)<-[:revisionOf]-()
         RETURN n
 
     '''
