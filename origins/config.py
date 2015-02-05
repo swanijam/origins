@@ -5,6 +5,17 @@ import logging
 import logging.config
 from copy import deepcopy
 
+ENV_PREFIX = 'ORIGINS'
+
+ENV_ELIGIBLE = (
+    'debug',
+    'host',
+    'port',
+    'generator-service',
+    'dispatch-service',
+    'neo4j',
+    'redis',
+)
 
 # Default configuration options
 default_options = {
@@ -134,8 +145,68 @@ def set_loglevel(level):
     setup_logging(options)
 
 
+def get_environ(keys=None, config=None, options=None, path=None):
+    "Extracts configuration options from the environment."
+    if keys is None:
+        keys = ENV_ELIGIBLE
+
+    if config is None:
+        config = default_options
+
+    if options is None:
+        options = {}
+
+    if path is None:
+        path = []
+
+    for key in keys:
+        if key not in config:
+            continue
+
+        value = config[key]
+
+        # Recurse
+        if isinstance(value, dict):
+            _options = options[key] = {}
+
+            get_environ(value.keys(),
+                        config=value,
+                        options=_options,
+                        path=path + [key])
+        else:
+            env_key = '_'.join(path + [key])
+            env_key = ENV_PREFIX + '_' + env_key.upper().replace('-', '_')
+
+            if env_key not in os.environ:
+                continue
+
+            env_value = os.environ[env_key]
+
+            # Get type of option to attempt to coerce env value
+            _type = type(value)
+
+            if _type is bool:
+                if env_value.lower() in ('true', '1'):
+                    env_value = True
+                elif env_value.lower() in ('false', '0'):
+                    env_value = False
+            elif _type is int:
+                try:
+                    env_value = int(env_value)
+                except ValueError:
+                    env_value = None
+
+            if env_value is not None:
+                options[key] = env_value
+
+    return options
+
+
 # Load config options from environment
 if os.environ.get('ORIGINS_CONFIG'):
     options = load_options(os.environ['ORIGINS_CONFIG'])
 else:
     options = make_options()
+
+# Load individual configuration options from the environment
+set_options(get_environ())
