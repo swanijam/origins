@@ -373,12 +373,16 @@ class ImportResource(restful.Resource):
                         }
                     }
 
-                    # Only submit events if the commit was successful
-                    # TODO: authorization? trusted host?
-                    # TODO: put in a thread so it does not block the response
-                    requests.post(url, data=json.dumps(payload), headers={
-                        'content-type': 'application/json',
-                    })
+                    try:
+                        # Only submit events if the commit was successful
+                        # TODO: authorization? trusted host?
+                        # TODO: put in a thread so it does not block the
+                        # response
+                        requests.post(url, data=json.dumps(payload), headers={
+                            'content-type': 'application/json',
+                        })
+                    except requests.ConnectionError:
+                        pass
 
                 # TODO: this is not very resource friendly since all of the
                 # transaction needs to be held by the server. However this is
