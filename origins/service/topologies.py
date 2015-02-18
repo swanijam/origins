@@ -315,7 +315,10 @@ class EntitiesResource(restful.Resource):
 
         _entities = manager.entities(instance.uuid)
 
-        items = [e.serialize(unpack=True) for e in _entities]
+        items = []
+
+        for e in _entities:
+            items.append(entities.prepare_instance(e))
 
         return items, 200, entities.list_headers()
 
