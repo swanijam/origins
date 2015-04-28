@@ -11,15 +11,8 @@ proto:
 	protoc --go_out=. storage/*.proto
 
 install:
-	go get github.com/sirupsen/logrus
-	go get github.com/boltdb/bolt
-	go get github.com/golang/protobuf/proto
-	go get github.com/golang/protobuf/protoc-gen-go
-	go get github.com/spf13/viper
-	go get github.com/spf13/cobra
-	go get github.com/julienschmidt/httprouter
-	go get github.com/psilva261/timsort
-	go get github.com/rs/cors
+	go get github.com/tools/godep
+	godep restore
 
 test-install: install
 	go get golang.org/x/tools/cmd/cover
@@ -33,6 +26,9 @@ test:
 	go test -cover ./...
 
 build:
+	go build -output=$(GOPATH)/bin/origins
+
+build-all:
 	mkdir -p bin
 
 	gox -output="bin/origins-{{.OS}}.{{.Arch}}" \
